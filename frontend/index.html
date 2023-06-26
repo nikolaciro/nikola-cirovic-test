@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Reputation Manager</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="#" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f1f1f1;
+
+        }
+
+        td {
+            font-size: 12px;
+        }
+
+        .table-container, .franchise-container {
+            background-color: #ffffff;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .table-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .progress-bar-vertical {
+            height: 200px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column-reverse;
+            width: 50px;
+            border-top-left-radius: 10%;
+            border-top-right-radius: 10%;
+        }
+
+        .progress-bar-vertical .progress-bar {
+            width: 100%;
+            height: 0;
+            transition: height 0.3s ease-in-out;
+            border-top-left-radius: 10%;
+            border-top-right-radius: 10%;
+        }
+
+        .progress-bar-vertical .progress-text {
+            text-align: center;
+        }
+
+        .card {
+            border-radius: 10px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .card-header,
+        .card-footer {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .card-value {
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+    </style>
+</head>
+<body>
+<div class="page-content page-container" id="page-content">
+    <div class="d-none" id="companies-list">
+        <ul id="companies-ul"></ul>
+    </div>
+    <div class="container mt-5">
+        <div class="table-container">
+            <div class="row size" id="score-tables">
+                <div class="col-lg-6">
+                    <table class="table d-none rank-table" id="data-table-max">
+                        <tbody>
+                        <!-- Table rows will be dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <table class="table d-none rank-table" id="data-table-min">
+                        <tbody>
+                        <!-- Table rows will be dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="franchise-container d-none">
+            <div class="row">
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <p class="card-value" id="rating"></p>
+                            <p class="text-secondary">Overall</p>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <div class="progress-bar-vertical">
+                                <div class="progress-bar" id="rating-bar"  role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <p class="font-weight-bold">Reviews rating</p>
+                            <p class="text-secondary">Reviews quantity is crucial as it provides representative feedback, demonstrates...</p>
+                            <p><a href="#">View details</a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <p class="card-value" id="reviews"></p>
+                            <p class="text-secondary">Overall</p>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <div class="progress-bar-vertical">
+                                <div class="progress-bar" id="reviews-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <p class="font-weight-bold">Reviews rating</p>
+                            <p class="text-secondary">Reviews quantity is crucial as it provides representative feedback, demonstrates...</p>
+                            <p><a href="#">View details</a></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <p class="card-value" id="reviews-monthly"></p>
+                            <p class="text-secondary">Overall</p>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <div class="progress-bar-vertical">
+                                <div class="progress-bar" id="reviews-monthly-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <p class="font-weight-bold">Reviews rating</p>
+                            <p class="text-secondary">Reviews quantity is crucial as it provides representative feedback, demonstrates...</p>
+                            <p><a href="#">View details</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let urlParams = new URLSearchParams(window.location.search);
+        const companyId = urlParams.get('company_id');
+        if (!companyId) {
+            $(".franchise-container").removeClass('d-block').addClass('d-none');
+            $.ajax({
+                url: 'http://127.0.0.1:8000/api/companies',
+                dataType: "json",
+                success: function(data) {
+                    let ul = $("#companies-ul");
+                    data.forEach(function (company) {
+                        let franchiseUrl = "http://127.0.0.1:3000?company_id=" + company.id + "&limit=5&order_by=score&order_dir=desc";
+                        let child = '<li><a href="' + franchiseUrl + '">' + company.name + '</a></li>';
+                        ul.append(child);
+                    });
+                    $("#companies-list").removeClass('d-none').addClass('d-block');
+                },
+                error: function() {
+                    console.log("Error occurred while fetching companies.");
+                }
+            });
+        }
+        if (companyId) {
+            $(".franchise-container").removeClass('d-block').addClass('d-none');
+            $(".rank-table").removeClass('d-none').addClass('d-block');
+            let params = new URLSearchParams();
+            let limit = urlParams.get('limit') ? urlParams.get('limit') : 5;
+
+            params.set("order_by", 'score');
+            params.set("order_dir", 'desc');
+            params.set("limit", limit);
+
+            let url = new URL('http://127.0.0.1:8000/api/companies/' + companyId + '/franchises');
+            url.search = params.toString();
+
+            $.ajax({
+                url: url.toString(),
+                dataType: "json",
+                success: function(data) {
+                    applyTableContent(data, 'data-table-max')
+                },
+                error: function() {
+                    console.log("Error occurred while fetching data franchises.");
+                }
+            });
+            params.set("order_dir", 'asc');
+            url.search = params.toString();
+            $.ajax({
+                url: url.toString(),
+                dataType: "json",
+                success: function(data) {
+                    applyTableContent(data, 'data-table-min')
+                },
+                error: function() {
+                    console.log("Error occurred while fetching data.");
+                }
+            });
+        }
+    });
+
+    function applyTableContent(data, tableId) {
+        let tableBody = $("#" + tableId + " tbody");
+        tableBody.empty();
+
+        data.forEach(function(franchise) {
+            let row = $("<tr></tr>");
+            let action = 'updateScoreBars(' + franchise.id + ')';
+            let nameCellLink = $("<a></a>").attr('onClick', action).attr("href", '#').text(franchise.name.substring(0, 80));
+            let nameCell = $("<td></td>").append(nameCellLink);
+
+            let progressColorClass = "bg-success";
+            if (franchise.score < 700) {
+                progressColorClass = "bg-warning";
+            }
+            if (franchise.score < 400) {
+                progressColorClass = "bg-danger";
+            }
+
+            let progressCell = $("<td class='w-25'></td>").html('<div class="progress"><div class="progress-bar ' + progressColorClass + '" role="progressbar" style="width: ' + franchise.score / 10 + '%" aria-valuenow="' + franchise.score + '" aria-valuemin="0" aria-valuemax="100"></div></div>');
+            let amountCell = $("<td></td>").text(franchise.score);
+
+            row.append(nameCell, progressCell, amountCell);
+            tableBody.append(row);
+        });
+    }
+    function updateScoreBars(franchiseId) {
+        $.ajax({
+            url: 'http://127.0.0.1:8000/api/franchises/' + franchiseId,
+            dataType: "json",
+            success: function(franchise) {
+                console.log(franchise);
+
+                const franchiseRating = franchise.rating;
+                const franchiseReviews = franchise.reviews;
+                const franchiseReviewsMonthly = franchise.reviews_per_month;
+
+                document.getElementById('rating').textContent = franchiseRating;
+                document.getElementById('reviews').textContent = franchiseReviews;
+                document.getElementById('reviews-monthly').textContent = franchiseReviewsMonthly;
+
+                updateProgressBar("rating-bar", franchiseReviews / 20 * 100);
+                updateProgressBar("reviews-bar", franchiseReviews / 20 * 100);
+                updateProgressBar("reviews-monthly-bar", franchiseReviewsMonthly / 5 * 100);
+
+                $(".franchise-container").removeClass('d-none').addClass('d-block');
+            },
+            error: function() {
+                console.log("Error occurred while fetching franchise.");
+            }
+        });
+
+        function updateProgressBar(barId, progress) {
+            const progressBar = document.getElementById(barId);
+            progress = Math.min(progress, 100);
+            progressBar.style.height = progress + "%";
+            progressBar.setAttribute("aria-valuenow", progress);
+            progressBar.innerText = progress + "%";
+
+            if (progress < 25) {
+                progressBar.classList.remove("bg-warning");
+                progressBar.classList.remove("bg-success");
+                progressBar.classList.add("bg-danger");
+            } else if (progress >= 25 && progress <= 75) {
+                progressBar.classList.remove("bg-danger");
+                progressBar.classList.remove("bg-success");
+                progressBar.classList.add("bg-warning");
+            } else {
+                progressBar.classList.remove("bg-danger");
+                progressBar.classList.remove("bg-warning");
+                progressBar.classList.add("bg-success");
+            }
+        }
+    }
+</script>
+</body>
+</html>
